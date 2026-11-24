@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "main.py": {
+      "excludeFiles": "{venv/**,.venv/**,__pycache__/**,**/*.pyc,eval_local.py,setup_model.py,.git/**}"
+    }
+  }
+}
