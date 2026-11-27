@@ -1,42 +1,41 @@
-# TDS RAG API — Vercel deployment
+# TDS RAG v3 — Hybrid retrieval
 
-This project uses FastAPI, FastEmbed ONNX, all-MiniLM-L6-v2, and NumPy cosine similarity.
+This version keeps the original 50 passages and uses:
+- FastEmbed `all-MiniLM-L6-v2` dense embeddings
+- BM25 lexical retrieval
+- Hybrid passage and sentence reranking
+- Conservative abstention
+- Explicit rejection of common prompt-exfiltration / override requests
+- Lazy, locked model initialization for serverless concurrency
 
-## Prepare the model cache before deployment
+## Windows / VS Code setup
 
 ```powershell
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 python setup_model.py
+uvicorn main:app --reload
 ```
 
-Keep `model_cache/` in the project and include it in the Git deployment.
-Do not add `model_cache/` to `.gitignore`.
+The setup script also creates `passage_vectors.npy`, `sentence_vectors.npy`, and `sentences.json` to reduce cold-start work. Keep these files and `model_cache/` in the project and commit them for Vercel deployment.
+Do not commit `venv/`.
 
-## Local run
-
-```powershell
-uvicorn main:app --host 127.0.0.1 --port 8000
-```
-
-## API
-
-`POST /query`
-
-```json
-{"question":"What port does PostgreSQL use?","top_k":3}
-```
-
-## Evaluate
+## Smoke test
 
 ```powershell
 python eval_local.py
 ```
 
-Set `RAG_API_URL` to evaluate a deployed endpoint.
+## Vercel
 
-## Deploy
+Push the project to GitHub and import it into Vercel.
+`main.py` exports the FastAPI object as `app`.
+Test `/`, `/health`, `/docs`, and `POST /query`.
 
-Push this folder to GitHub, import the repository in Vercel, and deploy.
-Vercel detects the FastAPI app exported as `app` from `main.py`.
+## Important
+
+The thresholds are initial heuristics, not calibrated against the hidden exam set.
+The included evaluation script is a smoke test, not the official 20-question evaluator.
+A regex guard is not a complete prompt-injection detector; retrieved passages are
+treated as data and no retrieved instructions are executed.

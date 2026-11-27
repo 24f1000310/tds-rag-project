@@ -1,4 +1,4 @@
-from threading import Lock
+import threading
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from rag import RAGEngine
 
-app = FastAPI(title="TDS RAG API", version="2.0.0")
+app = FastAPI(title="TDS RAG API", version="3.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,29 +16,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-engine = None
-engine_lock = Lock()
+_engine = None
+_engine_init_lock = threading.Lock()
 
 def get_engine():
-    global engine
-    if engine is None:
-        with engine_lock:
-            if engine is None:
-                engine = RAGEngine()
-    return engine
+    global _engine
+    if _engine is None:
+        with _engine_init_lock:
+            if _engine is None:
+                _engine = RAGEngine()
+    return _engine
 
 class QueryRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=2000)
     top_k: int = Field(default=3, ge=1, le=10)
 
 @app.get("/")
-def health():
-    return {"status": "ok", "service": "TDS RAG API"}
+def root():
+    return {"status": "ok", "service": "TDS RAG API", "version": "3.0.0"}
 
 @app.get("/health")
-def health_check():
-    # This lightweight route does not force-load the embedding model.
-    return {"status": "ok", "model": "all-MiniLM-L6-v2"}
+def health():
+    return {"status": "ok"}
 
 @app.post("/query")
 def query_api(request: QueryRequest):
